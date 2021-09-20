@@ -73,12 +73,13 @@ public partial class PartyCharacter
 //i added this to remove magic numbers when saving data
 public enum stats 
 {
-    id, health, mana, strength, agility, wisdom, items
+    signifier, id, health, mana, strength, agility, wisdom, items
 }
 
 static public class AssignmentPart1
 {
-
+    const int Sig_CharacterSaveData = 0;
+    const int Sig_CharacterEquiptmentSaveDate = 1;
     static public void SavePartyButtonPressed()
     {
 
@@ -87,22 +88,20 @@ static public class AssignmentPart1
         {
             foreach (PartyCharacter pc in GameContent.partyCharacters)
             {
-                //create equipment string with end delimitor ';'
-                string equipment = "";
-                foreach (var item in pc.equipment)
-                {
-                    equipment += item + "," ;
-                }
-                equipment += ";";
-
+                //create equipment string with end delimiter ';'
                 
-                sw.WriteLine(pc.classID + ","
+                sw.WriteLine( Sig_CharacterSaveData + "," + pc.classID + ","
                         + pc.health + ","
                         + pc.mana + ","
                         + pc.strength + ","
                         + pc.agility + ","
-                        + pc.wisdom + ","
-                        + equipment);
+                        + pc.wisdom + "," );
+
+                foreach (var item in pc.equipment)
+                {
+                    sw.WriteLine(Sig_CharacterEquiptmentSaveDate + "," + item);
+                }
+
             }
         }
     }
@@ -120,18 +119,19 @@ static public class AssignmentPart1
             {
                 string[] cvs = line.Split(',');
 
+                int signifier = int.Parse(cvs[0]);
 
-                PartyCharacter temp = new PartyCharacter(int.Parse(cvs[(int)stats.id]), int.Parse(cvs[(int)stats.health]), int.Parse(cvs[(int)stats.mana]), 
+                if(signifier == Sig_CharacterSaveData)
+                { 
+                    PartyCharacter characterToLoad = new PartyCharacter(int.Parse(cvs[(int)stats.id]), int.Parse(cvs[(int)stats.health]), int.Parse(cvs[(int)stats.mana]), 
                     int.Parse(cvs[(int)stats.strength]), int.Parse(cvs[(int)stats.agility]), int.Parse(cvs[(int)stats.wisdom]));
-
-                int i = (int)stats.items;
-                while (cvs[i] != ";")
-                {
-                    temp.equipment.AddLast(int.Parse(cvs[i]));
-                    i++;
+                    GameContent.partyCharacters.AddLast(characterToLoad);
                 }
-
-                GameContent.partyCharacters.AddLast(temp);
+                else if(signifier == Sig_CharacterEquiptmentSaveDate)
+                {
+                    GameContent.partyCharacters.Last.Value.equipment.AddLast(int.Parse(cvs[1]));
+                }
+                    
             }
         }
 
