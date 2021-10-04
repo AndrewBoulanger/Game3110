@@ -286,6 +286,7 @@ static public class AssignmentPart2
             }
 
         }
+        sr.Close();
 
         GameContent.RefreshUI();
         Debug.Log("Load " + selectedName);
@@ -293,12 +294,12 @@ static public class AssignmentPart2
 
     static public void SavePartyButtonPressed()
     {
-
+        string newPartyName = GameContent.GetPartyNameFromInput();
         bool isUniqueName = true;
 
         foreach (NameAndIndex nameAndIndex in nameAndIndices)
         {
-            if (nameAndIndex.name == GameContent.GetPartyNameFromInput())
+            if (nameAndIndex.name == newPartyName)
             {
                 SaveParty(Application.dataPath + Path.DirectorySeparatorChar + nameAndIndex.index + ".txt");
                 isUniqueName = false;
@@ -309,7 +310,8 @@ static public class AssignmentPart2
         {
             lastIndexUsed++;
             SaveParty(Application.dataPath + Path.DirectorySeparatorChar + lastIndexUsed + ".txt");
-            nameAndIndices.AddLast(new NameAndIndex(lastIndexUsed, GameContent.GetPartyNameFromInput()));
+            nameAndIndices.AddLast(new NameAndIndex(lastIndexUsed, newPartyName));
+            partyNames.Add(newPartyName);
         }
 
 
@@ -325,11 +327,37 @@ static public class AssignmentPart2
         Debug.Log("create new");
 
         SaveIndexManagementFile();
+
     }
 
     static public void DeletePartyButtonPressed()
     {
-        Debug.Log("Delete Current");
+        bool isDeleting = false;
+        NameAndIndex indexToDelete = null;
+        foreach (NameAndIndex nameAndIndex in nameAndIndices)
+        {
+            if (nameAndIndex.name == GameContent.GetPartyNameFromInput())
+            {
+                StreamWriter sw =  new StreamWriter(Application.dataPath + Path.DirectorySeparatorChar + nameAndIndex.index + ".txt");
+                sw.Dispose();
+                
+                indexToDelete = nameAndIndex;
+                isDeleting = true;
+            }
+        }
+
+        if(isDeleting)
+        { 
+            nameAndIndices.Remove(indexToDelete);
+            GameContent.RefreshUI();
+            Debug.Log("deleting");
+            SaveIndexManagementFile();
+            partyNames.Remove(indexToDelete.name);
+        }
+        else
+        {
+            Debug.Log("could not find file");
+        }
     }
 
     static public void SaveIndexManagementFile()
