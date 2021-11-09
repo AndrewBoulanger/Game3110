@@ -264,32 +264,25 @@ static public class AssignmentPart2
                 indexToLoad = nameAndIndex.index;
         }
 
+        if(indexToLoad != -1)
+            ReadPartyDataFromFile(indexToLoad);
+
+    }
+
+    static private void ReadPartyDataFromFile(int indexToLoad)
+    {
         StreamReader sr = new StreamReader(Application.dataPath + Path.DirectorySeparatorChar + indexToLoad + ".txt");
 
+        LinkedList<string> partyData = new LinkedList<string>();
         string line;
         while ((line = sr.ReadLine()) != null)
         {
-            Debug.Log(line);
-
-            string[] csv = line.Split(',');
-
-            int signifier = int.Parse(csv[0]);
-
-            if (signifier == PartyCharacterSaveDataSignifier)
-            {
-                PartyCharacter pc = new PartyCharacter(int.Parse(csv[1]), int.Parse(csv[2]), int.Parse(csv[3]), int.Parse(csv[4]), int.Parse(csv[5]), int.Parse(csv[6]));
-                GameContent.partyCharacters.AddLast(pc);
-            }
-            else if (signifier == PartyCharacterEquipmentSaveDataSignifier)
-            {
-                GameContent.partyCharacters.Last.Value.equipment.AddLast(int.Parse(csv[1]));
-            }
-
+            partyData.AddLast(line);
         }
         sr.Close();
 
-        GameContent.RefreshUI();
-        Debug.Log("Load " + selectedName);
+        LoadParty(partyData);
+
     }
 
     static public void SavePartyButtonPressed()
@@ -379,14 +372,40 @@ static public class AssignmentPart2
 
     static public void SaveParty(string fileName)
     {
+        LinkedList<string> partyData = CreatePartySaveDataStrings();
 
         StreamWriter sw = new StreamWriter(fileName);
 
+        foreach (string line in partyData)
+        {
+            sw.WriteLine(line);
+        }
+
+        sw.Close();
+    }
+
+    static public void SendCurrentPartyToSharingServer(NetworkClient networkClient)
+    {
+        LinkedList<string> data = CreatePartySaveDataStrings();
+
+        networkClient.SendMessageToHost(ClientToServerSignifiers.PartyTransferDataStart + "");
+
+        foreach(string line in data)
+        {
+            string msg = ClientToServerSignifiers.PartyTransferData + "," + line;
+            networkClient.SendMessageToHost(msg);
+        }
+        networkClient.SendMessageToHost(ClientToServerSignifiers.PartyTransferDataEnd + "");
+    }
+
+    static private LinkedList<string> CreatePartySaveDataStrings()
+    {
+        LinkedList<string> data = new LinkedList<string>();
+
         foreach (PartyCharacter pc in GameContent.partyCharacters)
         {
-            //Debug.Log("PC class id == " + pc.classID);
-
-            sw.WriteLine(PartyCharacterSaveDataSignifier + "," + pc.classID + "," + pc.health
+   
+            data.AddLast(PartyCharacterSaveDataSignifier + "," + pc.classID + "," + pc.health
             + "," + pc.mana
             + "," + pc.strength
             + "," + pc.agility
@@ -394,12 +413,35 @@ static public class AssignmentPart2
 
             foreach (int equip in pc.equipment)
             {
-                sw.WriteLine(PartyCharacterEquipmentSaveDataSignifier + "," + equip);
+                data.AddLast(PartyCharacterEquipmentSaveDataSignifier + "," + equip);
             }
         }
 
-        sw.Close();
+        return data;
+    }
 
+    static public void LoadParty(LinkedList<string> data)
+    {
+        GameContent.partyCharacters.Clear();
+
+        foreach(string line in data)
+        { 
+            string[] csv = line.Split(',');
+
+            int signifier = int.Parse(csv[0]);
+
+            if (signifier == PartyCharacterSaveDataSignifier)
+            {
+                PartyCharacter pc = new PartyCharacter(int.Parse(csv[1]), int.Parse(csv[2]), int.Parse(csv[3]), int.Parse(csv[4]), int.Parse(csv[5]), int.Parse(csv[6]));
+                GameContent.partyCharacters.AddLast(pc);
+            }
+            else if (signifier == PartyCharacterEquipmentSaveDataSignifier)
+            {
+                GameContent.partyCharacters.Last.Value.equipment.AddLast(int.Parse(csv[1]));
+            }
+        }
+
+        GameContent.RefreshUI();
     }
 
 }

@@ -1,2 +1,4 @@
-1,4
+1,7
 2,3,white mage
+2,5,fighter&mage
+2,7,2mages
